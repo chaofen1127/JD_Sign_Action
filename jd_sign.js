@@ -13,6 +13,10 @@ const cookie = process.env.JD_COOKIE
 const dual_cookie = process.env.JD_DUAL_COOKIE
 // Server酱SCKEY
 const push_key = process.env.PUSH_KEY
+//appid
+const appid = process.env.APPID
+// SECRET
+const secret = process.env.SECRET
 
 // 京东脚本文件
 const js_url = 'https://raw.githubusercontent.com/NobyDa/Script/master/JD-DailyBonus/JD_DailyBonus.js'
@@ -63,41 +67,74 @@ function setupCookie() {
 
 function sendNotificationIfNeed() {
 
-  if (!push_key) {
-    console.log('执行任务结束!'); return;
+//   if (!push_key) {
+//     console.log('执行任务结束!'); return;
+//   }
+
+//   if (!fs.existsSync(result_path)) {
+//     console.log('没有执行结果，任务中断!'); return;
+//   }
+
+//   let text = "京东签到_" + dateFormat();
+//   let desp = fs.readFileSync(result_path, "utf8")
+
+//   // 去除末尾的换行
+//   let SCKEY = push_key.replace(/[\r\n]/g,"")
+  let access_token = "43_oNepVNXBSDpXIY8bojPg0UuvkO1L-edXHpTZg9Y0tadzd03LJqEjHjXYdKL9TLjIi00abO5Co6pLIktIZ0yAiOLECZt-62Bxhpeb_a1iiuweIImhn29Dpsljoqznolw50cTpq5aEPCfL7E6FDPJiAEAUGA";
+
+  const options1 ={
+    uri:  `https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=${appid}&secret=${secret}`,
+    method: 'GET'
   }
-
-  if (!fs.existsSync(result_path)) {
-    console.log('没有执行结果，任务中断!'); return;
-  }
-
-  let text = "京东签到_" + dateFormat();
-  let desp = fs.readFileSync(result_path, "utf8")
-
-  // 去除末尾的换行
-  let SCKEY = push_key.replace(/[\r\n]/g,"")
-
-  const options ={
-    uri:  `https://sc.ftqq.com/${SCKEY}.send`,
-    form: { text, desp },
-    json: true,
-    method: 'POST'
-  }
-
-  rp.post(options).then(res=>{
-    const code = res['errno'];
-    if (code == 0) {
-      console.log("通知发送成功，任务结束！")
-    }
-    else {
-      console.log(res);
-      console.log("通知发送失败，任务中断！")
-      fs.writeFileSync(error_path, JSON.stringify(res), 'utf8')
-    }
+  rp.get(options1).then(res=>{
+    access_token = res['access_token'];
+    console.log(access_token);
   }).catch((err)=>{
-    console.log("通知发送失败，任务中断！")
+    console.log("获取token失败！")
     fs.writeFileSync(error_path, err, 'utf8')
   })
+  
+   const options ={
+      uri:  `https://api.weixin.qq.com/cgi-bin/message/template/send?access_token=${access_token}`,
+      method: 'POST',
+      body:{
+        touser:"ocAHF6CgexoGG6xLEalDJuEBFNEk",
+        template_id:"4ORaT-FOFzhDae1Qsm29dZSDDlQKmkK24XtCU7x8FO0",
+        url:"https://www.baidu.com",
+        topcolor:"#FF0000",
+        data:{
+                title: {
+                    value:"\n\n触发时间：",
+                    color:"#ff3399"
+                },
+                content:{
+                    value:"\n\n签到成功",
+
+                    color:"#cc00ff"
+                },
+                time_now:{
+
+                    value:"\n\n\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t当前时间：",
+
+                    color:"#030303"
+                }
+              }
+        },
+        json: true
+    }
+
+    rp(options).then(res=>{
+      const code = res['errcode'];
+      if(code==0)
+        console.log("通知成功")
+      else
+        console.log("通知失败")
+    }).catch((err)=>{
+      console.log("通知发送失败，任务中断！")
+      fs.writeFileSync(error_path, err, 'utf8')
+    })
+  
+  
 }
 
 function main() {
